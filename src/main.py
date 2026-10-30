@@ -9,7 +9,7 @@ You will implement the functions in recommender.py:
 - recommend_songs
 """
 
-from recommender import load_songs, score_song, recommend_songs
+from recommender import load_songs, recommend_songs
 
 
 def main() -> None:
@@ -23,8 +23,6 @@ def main() -> None:
                   'year': 2022,
                   'likes_acoustic': False}
 
-    for song in songs:
-        print(song.get('title'), 'score: ', score_song(user_prefs, song))
     recommendations = recommend_songs(user_prefs, songs, k=5)
 
     print("\nTop recommendations:\n")
