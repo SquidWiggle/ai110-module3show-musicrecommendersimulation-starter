@@ -204,6 +204,20 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
     return scored_songs[:k]
 
 
+FEATURE_MAX_POINTS: Dict[str, float] = {
+    "groove match": 2.00,
+    "mood match": 1.80,
+    "valence match": 1.20,
+    "genre match": 1.10,
+    "energy intensity match": 1.00,
+    "tempo match": 1.00,
+    "rhythm & energy match": 0.60,
+    "popularity boost": 0.50,
+    "era proximity match": 0.50,
+    "acoustic texture match": 0.30,
+}
+
+
 def parse_reason(reason_str: str) -> Tuple[float, str, str]:
     """
     Parses a reason string like 'mood match (+1.80)' into (1.80, '+1.80', 'mood match').
@@ -217,6 +231,27 @@ def parse_reason(reason_str: str) -> Tuple[float, str, str]:
     return 0.0, "", reason_str.strip()
 
 
+def _format_tier_line(prefix: str, items: List[str], width: int = 80) -> List[str]:
+    """
+    Formats a tier category and wraps items without breaking individual item tokens.
+    """
+    header = f"    {prefix} : "
+    indent = " " * len(header)
+    lines: List[str] = []
+    current = header
+
+    for idx, item in enumerate(items):
+        sep = ", " if idx > 0 else ""
+        if len(current) + len(sep) + len(item) > width and idx > 0:
+            lines.append(current)
+            current = indent + item
+        else:
+            current += sep + item
+    if current.strip():
+        lines.append(current)
+    return lines
+
+
 def format_recommendation_card(
     rank: int,
     song: Dict,
@@ -225,7 +260,7 @@ def format_recommendation_card(
     width: int = 80,
 ) -> str:
     """
-    Formats a single song recommendation into a balanced 2-column card.
+    Formats a single song recommendation with match-strength tiers and point capture metrics.
     """
     # 1. Normalize reasons
     if isinstance(reasons, str):
@@ -234,14 +269,17 @@ def format_recommendation_card(
         raw_reasons = list(reasons)
 
     parsed_reasons = [parse_reason(r) for r in raw_reasons]
-    # Sort descending by impact
-    parsed_reasons.sort(key=lambda x: x[0], reverse=True)
 
-    # 2. Header
+    # 2. Header with progress meter
+    pct = int(round((score / 10.0) * 100))
+    bar_len = 10
+    filled = min(bar_len, max(0, int(round((score / 10.0) * bar_len))))
+    bar = "█" * filled + "░" * (bar_len - filled)
+
     title = song.get("title", "Untitled")
     artist = song.get("artist", "Unknown Artist")
     header_left = f"#{rank}  {title} — {artist}"
-    header_right = f"Score: {score:.2f} / 10.00"
+    header_right = f"Score: {score:.2f} / 10.00 [{bar} {pct}%]"
 
     if len(header_left) + len(header_right) + 2 > width:
         max_title_len = width - len(header_right) - len(artist) - 10
@@ -262,23 +300,56 @@ def format_recommendation_card(
         meta.append(str(song["release_year"]))
     meta_line = f"    {' • '.join(meta)}" if meta else ""
 
-    # 4. Reasons in balanced 2-column layout
-    reasons_lines = ["    Reasons:"]
-    if not parsed_reasons:
-        reasons_lines.append("      • No specific matching criteria recorded.")
-    else:
-        col_width = (width - 10) // 2
-        for i in range(0, len(parsed_reasons), 2):
-            val1, pts1, label1 = parsed_reasons[i]
-            col1 = f"• {pts1}  {label1}" if pts1 else f"• {label1}"
+    # 4. Tiers by match strength
+    matches_items: List[Tuple[float, float, str]] = []
+    close_items: List[Tuple[float, float, str]] = []
+    weak_items: List[Tuple[float, float, str]] = []
+    seen_features = set()
 
-            if i + 1 < len(parsed_reasons):
-                val2, pts2, label2 = parsed_reasons[i + 1]
-                col2 = f"• {pts2}  {label2}" if pts2 else f"• {label2}"
-                line = f"      {col1:<{col_width}}  {col2}"
-            else:
-                line = f"      {col1}"
-            reasons_lines.append(line)
+    for val, pts_str, label in parsed_reasons:
+        max_val = FEATURE_MAX_POINTS.get(label, val)
+        ratio = (val / max_val) if max_val > 0 else 1.0
+        seen_features.add(label)
+        item_text = f"{pts_str}  {label}" if pts_str else label
+
+        if ratio >= 0.90:
+            matches_items.append((val, max_val, item_text))
+        elif ratio >= 0.50:
+            close_items.append((val, max_val, item_text))
+        else:
+            weak_items.append((val, max_val, item_text))
+
+    gaps_items: List[Tuple[float, float, str]] = []
+    for feat, max_val in FEATURE_MAX_POINTS.items():
+        if feat not in seen_features:
+            gaps_items.append((0.0, max_val, f"{feat} (0.00 / {max_val:.2f})"))
+
+    tier_lines: List[str] = []
+    if not parsed_reasons:
+        tier_lines.append("    • No specific matching criteria recorded.")
+    else:
+        if matches_items:
+            cap = sum(x[0] for x in matches_items)
+            pos = sum(x[1] for x in matches_items)
+            prefix = f"✓ MATCHES  ({cap:.2f} / {pos:.2f})"
+            tier_lines.extend(_format_tier_line(prefix, [x[2] for x in matches_items], width))
+
+        if close_items:
+            cap = sum(x[0] for x in close_items)
+            pos = sum(x[1] for x in close_items)
+            prefix = f"▲ CLOSE    ({cap:.2f} / {pos:.2f})"
+            tier_lines.extend(_format_tier_line(prefix, [x[2] for x in close_items], width))
+
+        if weak_items:
+            cap = sum(x[0] for x in weak_items)
+            pos = sum(x[1] for x in weak_items)
+            prefix = f"△ WEAK     ({cap:.2f} / {pos:.2f})"
+            tier_lines.extend(_format_tier_line(prefix, [x[2] for x in weak_items], width))
+
+        if gaps_items and len(parsed_reasons) > 2:
+            lost_pts = sum(x[1] for x in gaps_items)
+            prefix = f"✗ GAPS     ({lost_pts:.2f} pts lost)"
+            tier_lines.extend(_format_tier_line(prefix, [x[2] for x in gaps_items], width))
 
     divider = "=" * width
     end_divider = "-" * width
@@ -286,7 +357,7 @@ def format_recommendation_card(
     parts = [divider, header_line] if rank == 1 else [header_line]
     if meta_line:
         parts.append(meta_line)
-    parts.extend(reasons_lines)
+    parts.extend(tier_lines)
     parts.append(end_divider)
     return "\n".join(parts)
 
