@@ -13,9 +13,12 @@ Describe what your recommender is designed to do and who it is for.
 
 Prompts:  
 
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+- What kind of recommendations does it generate
+    - Content based recommendation based on similarities in content features.
+- What assumptions does it make about the user
+    - The user enjoys content of similar features, for example, songs of the same energy or genre, rather than music of various genre and styles.
+- Is this for real users or classroom exploration
+    - Classroom exploration
 
 ---
 
