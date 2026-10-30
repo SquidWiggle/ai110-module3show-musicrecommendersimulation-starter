@@ -47,12 +47,36 @@ class Recommender:
         self.songs = songs
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
-        # TODO: Implement recommendation logic
-        return self.songs[:k]
+        user_dict = {
+            "favorite_genre": user.favorite_genre,
+            "favorite_mood": user.favorite_mood,
+            "target_energy": user.target_energy,
+            "likes_valence": user.likes_valence,
+            "target_danceability": user.target_danceability,
+            "target_tempo_bpm": user.target_tempo_bpm,
+            "target_year": user.target_year,
+            "likes_acoustic": user.likes_acoustic,
+        }
+        scored = [
+            (song, score_song(user_dict, vars(song))[0])
+            for song in self.songs
+        ]
+        scored.sort(key=lambda item: item[1], reverse=True)
+        return [song for song, _ in scored[:k]]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
-        # TODO: Implement explanation logic
-        return "Explanation placeholder"
+        user_dict = {
+            "favorite_genre": user.favorite_genre,
+            "favorite_mood": user.favorite_mood,
+            "target_energy": user.target_energy,
+            "likes_valence": user.likes_valence,
+            "target_danceability": user.target_danceability,
+            "target_tempo_bpm": user.target_tempo_bpm,
+            "target_year": user.target_year,
+            "likes_acoustic": user.likes_acoustic,
+        }
+        _, reasons = score_song(user_dict, vars(song))
+        return ", ".join(reasons) if reasons else "No specific matching criteria recorded."
 
 def load_songs(csv_path: str) -> List[Dict]:
     """
