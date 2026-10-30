@@ -66,9 +66,10 @@ Some prompts to answer:
 
 - How do you choose which songs to recommend
 After computing individual component points, total composite scores are calculated and ranked:
-1. Score each song in the catalog across Emotion, Style, Groove, Intensity, and Discovery/Era (up to 10.0 pts).
-2. Rank songs in descending order of total score.
-3. Return the top $k$ candidates along with human-readable rationale explanations.
+  1. Score each song in the catalog across Emotion, Style, Groove, Intensity, and Discovery/Era (up to 10.0 pts).
+  2. Rank songs in descending order of total score.
+  3. Return the top $k$ candidates along with human-readable rationale explanations.
+  - Potential Bias: valence, danceability, and energy are sampled too many times in this algorithm recipe, so the recommendation can be skewed and favor these featuers. Also, popularity can be over valued.
 
 ```mermaid
 flowchart TD
