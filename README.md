@@ -16,6 +16,10 @@ Replace this paragraph with your own summary of what your version does.
 ---
 
 ## How The System Works
+  In real world music recommendation systes, songs are recommended based on a multi-layer model. 
+  1. When there is no user data, a content based model such as a simple one like one designed here is used.It use various features of a song to generate vector scores and compare their distances or differences.
+  2. Next, when there is a pool of user generated a lot of data, a song can be recommended to a user when multiple other users listened to the same song, and also listened to the recommended songs. Bridge user (a user who listen to songs of different features) playlists can help generate more songs to recommend to other users. A user's ground truth data (did the user listen to the recommended song and stayed long enough to enjoy it, or 'liked' it) can validate if a model's behaving well.
+  3. Deep neural models discover and create associations based on complex and implicit cultral patterns between songs. Even if the model does not understand what is the meaning underneath the association, it knows to associate songs that are usually enjoyed by people in the same setting.
 
 Explain your design in plain language.
 
@@ -54,7 +58,7 @@ Some prompts to answer:
 
 - How do you choose which songs to recommend
 After all scores are added up, the total points of the song is compared to the user's preference.
-
+  Compare the closeness of the final score aginst the user's preference. The top cloeset scored candidates are list.
 You can include a simple diagram or bullet list if helpful.
 
 ---
