@@ -17,6 +17,9 @@ class Song:
     valence: float
     danceability: float
     acousticness: float
+    popularity: int = 50
+    duration_ms: int = 180000
+    release_year: int = 2024
 
 @dataclass
 class UserProfile:
