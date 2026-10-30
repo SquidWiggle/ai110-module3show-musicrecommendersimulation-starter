@@ -32,29 +32,35 @@ Some prompts to answer:
   - Intensity: energy & tempo bgm
 - What information does your `UserProfile` store
   - favorite_genre
-  - favorite_mood 
-  - target_energy 
-  - likes_acoustic (not required in my opinion, but kept for future improvements)
-  - likes_valences
+  - favorite_mood
+  - target_energy
+  - likes_valence
   - target_danceability
   - target_tempo_bpm
+  - target_year
+  - likes_acoustic (not required in my opinion, but kept for future improvements)
 - How does your `Recommender` compute a score for each song
-  - In a total of 10.0 pts budget, 
-    1. Emotion (3.5 pts)
-      - Exact mood match (`song.mood == user.favorite_mood`) gives the song 2 points.
-      - Close valence gives you max 1.5 points: `1.5 * (1.0 - abs(target_val - song.valence))`.
+  - In a total of 10.0 pts budget across 5 components:
+    1. Emotion (3.0 pts)
+      - Exact mood match (`song.mood == user.favorite_mood`) gives the song 1.8 points.
+      - Close valence gives you max 1.2 points: `1.2 * (1.0 - abs(target_val - song.valence))`.
 
-    2. Style (2.5 pts)
-      - Genre match gives a song 1.5 pts. If genre is not matched then it gets 0 points.
-      - Extra 1 style point if `danceability` and `energy` are closed to the user's preference: 
-      `1.0 * (1.0 - 0.5 * abs(target_dance - song.danceability) - 0.5 * abs(target_energy - song.energy))`.
+    2. Style (2.0 pts)
+      - Genre match gives a song 1.2 pts. If genre is not matched then it gets 0 points.
+      - Extra 0.8 style point for rhythmic and energy alignment:
+      `0.8 * (1.0 - 0.5 * abs(target_dance - song.danceability) - 0.5 * abs(target_energy - song.energy))`.
 
     3. Groove (2.0 pts)
-      - Groove is close to `danceability`, but if valence drifts too far, the song is not close to prefered groove anymore. Reward full 2 groove points if `abs(target_val - song.valence) <= 0.15`. If valence drifts further, groove points are throttled:
+      - Danceability gated by valence lock:
       `groove_pts = 2.0 * (1.0 - abs(target_dance - song.danceability)) * max(0.0, 1.0 - 2.0 * abs(target_val - song.valence))`.
+
     4. Intensity (2.0 pts)
       - Energy is max 1.0 pt: `1.0 * (1.0 - abs(target_energy - song.energy))`.
-      - Tempo BGM is max 1.0 pt: `1.0 * max(0.0, 1.0 - abs(target_bpm - song.tempo_bpm) / 100.0)`.
+      - Tempo BPM is max 1.0 pt: `1.0 * max(0.0, 1.0 - abs(target_bpm - song.tempo_bpm) / 100.0)`.
+
+    5. Discovery & Era (1.0 pt)
+      - Popularity is max 0.5 pt: `0.5 * (song.popularity / 100.0)`.
+      - Release year era proximity is max 0.5 pt: `0.5 * max(0.0, 1.0 - abs(target_year - song.release_year) / 10.0)`.
 
 - How do you choose which songs to recommend
 After all scores are added up, the total points of the song is compared to the user's preference.
