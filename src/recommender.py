@@ -30,10 +30,11 @@ class UserProfile:
     favorite_genre: str
     favorite_mood: str
     target_energy: float
-    likes_acoustic: bool = False
     likes_valence: float
     target_danceability: float
     target_tempo_bpm: float
+    target_year: int
+    likes_acoustic: bool = False
 
 class Recommender:
     """
