@@ -63,9 +63,32 @@ Some prompts to answer:
       - Release year era proximity is max 0.5 pt: `0.5 * max(0.0, 1.0 - abs(target_year - song.release_year) / 10.0)`.
 
 - How do you choose which songs to recommend
-After all scores are added up, the total points of the song is compared to the user's preference.
-  - Compare the closeness of the final score aginst the user's preference. The top cloeset scored candidates are list.
-You can include a simple diagram or bullet list if helpful.
+After computing individual component points, total composite scores are calculated and ranked:
+1. Score each song in the catalog across Emotion, Style, Groove, Intensity, and Discovery/Era (up to 10.0 pts).
+2. Rank songs in descending order of total score.
+3. Return the top $k$ candidates along with human-readable rationale explanations.
+
+```mermaid
+flowchart TD
+    A["UserProfile & Song Data"] --> B["Compute Feature Scores (10.0 pts Max)"]
+    
+    subgraph Scoring ["5-Component Scoring Engine"]
+        B --> C1["Emotion (3.0 pts): mood & valence"]
+        B --> C2["Style (2.0 pts): genre, dance & energy"]
+        B --> C3["Groove (2.0 pts): danceability gated by valence"]
+        B --> C4["Intensity (2.0 pts): energy & tempo"]
+        B --> C5["Discovery & Era (1.0 pt): popularity & release_year"]
+    end
+
+    C1 --> D["Sum Total Score (0 - 10.0 pts)"]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+
+    D --> E["Rank Songs Descending by Score"]
+    E --> F["Return Top-k Recommendations + Explanations"]
+```
 
 ---
 
