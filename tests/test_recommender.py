@@ -1,4 +1,11 @@
-from src.recommender import Song, UserProfile, Recommender, load_songs
+from src.recommender import (
+    Song,
+    UserProfile,
+    Recommender,
+    load_songs,
+    score_song,
+    recommend_songs,
+)
 
 def make_small_recommender() -> Recommender:
     songs = [
@@ -120,3 +127,183 @@ def test_load_songs_from_isolated_csv(tmp_path):
         "duration_ms": 200000,
         "release_year": 2023,
     }
+
+
+def test_score_song_perfect_match_documents_scoring_breakdown():
+    """
+    Documents how score_song computes a maximum 10.0 score across all 5 components:
+    1. Emotion (3.0 pts): exact mood (1.8) + valence proximity (1.2)
+    2. Style (2.0 pts): genre (1.1) + rhythm/energy (0.6) + acoustic (0.3)
+    3. Groove (2.0 pts): valence-gated danceability (2.0)
+    4. Intensity (2.0 pts): energy (1.0) + tempo proximity (1.0)
+    5. Discovery & Era (1.0 pt): popularity (0.5) + era proximity (0.5)
+    """
+    user_prefs = {
+        "genre": "pop",
+        "mood": "happy",
+        "energy": 0.8,
+        "valence": 0.9,
+        "danceability": 0.8,
+        "tempo": 120.0,
+        "year": 2024,
+        "likes_acoustic": False,
+    }
+    song = {
+        "id": 1,
+        "title": "Perfect Match Track",
+        "artist": "Artist",
+        "genre": "pop",
+        "mood": "happy",
+        "energy": 0.8,
+        "tempo_bpm": 120.0,
+        "valence": 0.9,
+        "danceability": 0.8,
+        "acousticness": 0.15,
+        "popularity": 100,
+        "duration_ms": 180000,
+        "release_year": 2024,
+    }
+
+    score, reasons = score_song(user_prefs, song)
+
+    assert score == 10.0
+    assert len(reasons) == 10
+    assert "mood match (+1.80)" in reasons
+    assert "genre match (+1.10)" in reasons
+    assert "groove match (+2.00)" in reasons
+
+
+def test_score_song_mismatch_yields_low_score_and_omits_unmatched_reasons():
+    """Documents how score_song penalizes mismatches and suppresses zero-point reasons."""
+    user_prefs = {
+        "genre": "pop",
+        "mood": "happy",
+        "energy": 0.9,
+        "valence": 0.9,
+        "danceability": 0.9,
+        "tempo": 140.0,
+        "year": 2024,
+        "likes_acoustic": False,
+    }
+    mismatched_song = {
+        "id": 2,
+        "title": "Opposite Track",
+        "artist": "Artist",
+        "genre": "classical",
+        "mood": "sad",
+        "energy": 0.1,
+        "tempo_bpm": 40.0,
+        "valence": 0.1,
+        "danceability": 0.1,
+        "acousticness": 0.95,
+        "popularity": 0,
+        "duration_ms": 200000,
+        "release_year": 2000,
+    }
+
+    score, reasons = score_song(user_prefs, mismatched_song)
+
+    assert score < 2.0
+    assert not any("mood match" in r for r in reasons)
+    assert not any("genre match" in r for r in reasons)
+
+
+def test_recommend_songs_documents_ranking_and_tuple_contract():
+    """
+    Documents the functional recommend_songs() specification:
+    1. Input: user_prefs dict, songs list of dicts, and k integer limit.
+    2. Scoring: evaluates every song using score_song(user_prefs, song).
+    3. Output schema: List of tuples (song_dict, score_float, explanation_str).
+    4. Ordering: sorted descending by score (highest match first).
+    5. Slicing: returns at most top k results.
+    """
+    user_prefs = {
+        "genre": "pop",
+        "mood": "happy",
+        "energy": 0.8,
+        "valence": 0.9,
+        "danceability": 0.8,
+        "tempo": 120.0,
+        "year": 2024,
+        "likes_acoustic": False,
+    }
+
+    high_match_song = {
+        "id": 1,
+        "title": "High Match Track",
+        "artist": "Artist A",
+        "genre": "pop",
+        "mood": "happy",
+        "energy": 0.8,
+        "tempo_bpm": 120.0,
+        "valence": 0.9,
+        "danceability": 0.8,
+        "acousticness": 0.15,
+        "popularity": 100,
+        "duration_ms": 180000,
+        "release_year": 2024,
+    }
+    low_match_song = {
+        "id": 2,
+        "title": "Low Match Track",
+        "artist": "Artist B",
+        "genre": "classical",
+        "mood": "sad",
+        "energy": 0.2,
+        "tempo_bpm": 60.0,
+        "valence": 0.2,
+        "danceability": 0.2,
+        "acousticness": 0.9,
+        "popularity": 10,
+        "duration_ms": 240000,
+        "release_year": 2000,
+    }
+    catalog = [low_match_song, high_match_song]
+
+    # Request top 1
+    recommendations = recommend_songs(user_prefs, catalog, k=1)
+
+    # 1. Output length obeys k
+    assert len(recommendations) == 1
+
+    # 2. Output structure is (song_dict, score, explanation)
+    top_song, top_score, explanation = recommendations[0]
+    assert isinstance(top_song, dict)
+    assert isinstance(top_score, float)
+    assert isinstance(explanation, str)
+
+    # 3. Best-matching song is ranked first despite catalog ordering
+    assert top_song["id"] == 1
+    assert top_score == 10.0
+    assert "mood match" in explanation
+    assert "genre match" in explanation
+
+
+def test_recommend_songs_handles_boundary_cases():
+    """Documents behavior with default k, catalog smaller than k, and empty catalog."""
+    user_prefs = {"genre": "pop", "mood": "happy"}
+    sample_song = {
+        "id": 10,
+        "title": "Solo Track",
+        "artist": "Artist",
+        "genre": "pop",
+        "mood": "happy",
+        "energy": 0.5,
+        "tempo_bpm": 120.0,
+        "valence": 0.5,
+        "danceability": 0.5,
+        "acousticness": 0.5,
+        "popularity": 50,
+        "duration_ms": 180000,
+        "release_year": 2024,
+    }
+
+    # Catalog smaller than default k=5
+    results = recommend_songs(user_prefs, [sample_song])
+    assert len(results) == 1
+    assert results[0][0]["id"] == 10
+
+    # Empty catalog returns empty list
+    assert recommend_songs(user_prefs, [], k=3) == []
+
+
