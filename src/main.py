@@ -22,7 +22,8 @@ def main() -> None:
                   'valence': 0.6, 
                   'danceability': 0.67,
                   'tempo': 120,
-                  'year': 2022}
+                  'year': 2022,
+                  'likes_acoustic': False}
 
     recommendations = recommend_songs(user_prefs, songs, k=5)
 

@@ -16,10 +16,10 @@ Replace this paragraph with your own summary of what your version does.
 ---
 
 ## How The System Works
-  In real world music recommendation systes, songs are recommended based on a multi-layer model. 
-  1. When there is no user data, a content based model such as a simple one like one designed here is used.It use various features of a song to generate vector scores and compare their distances or differences.
+  In real world music recommendation systems, songs are recommended based on a multi-layer model. 
+  1. When there is no user data, a content based model such as a simple one like one designed here is used. It uses various features of a song to generate vector scores and compare their distances or differences.
   2. Next, when there is a pool of user generated a lot of data, a song can be recommended to a user when multiple other users listened to the same song, and also listened to the recommended songs. Bridge user (a user who listen to songs of different features) playlists can help generate more songs to recommend to other users. A user's ground truth data (did the user listen to the recommended song and stayed long enough to enjoy it, or 'liked' it) can validate if a model's behaving well.
-  3. Deep neural models discover and create associations based on complex and implicit cultral patterns between songs. Even if the model does not understand what is the meaning underneath the association, it knows to associate songs that are usually enjoyed by people in the same setting.
+  3. Deep neural models discover and create associations based on complex and implicit cultural patterns between songs. Even if the model does not understand what is the meaning underneath the association, it knows to associate songs that are usually enjoyed by people in the same setting.
 
 Explain your design in plain language.
 
@@ -27,9 +27,9 @@ Some prompts to answer:
 
 - What features does each `Song` use in your system
   - Emotion: mood & valence
-  - Style: genre & energy
-  - Groove: danceability & vallene
-  - Intensity: energy & tempo bgm
+  - Style: genre, energy & acousticness
+  - Groove: danceability & valence
+  - Intensity: energy & tempo bpm
 - What information does your `UserProfile` store
   - favorite_genre
   - favorite_mood
@@ -38,7 +38,7 @@ Some prompts to answer:
   - target_danceability
   - target_tempo_bpm
   - target_year
-  - likes_acoustic (not required in my opinion, but kept for future improvements)
+  - likes_acoustic (toggles acoustic vs electronic sound texture preference)
 - How does your `Recommender` compute a score for each song
   - In a total of 10.0 pts budget across 5 components:
     1. Emotion (3.0 pts)
@@ -46,9 +46,11 @@ Some prompts to answer:
       - Close valence gives you max 1.2 points: `1.2 * (1.0 - abs(target_val - song.valence))`.
 
     2. Style (2.0 pts)
-      - Genre match gives a song 1.2 pts. If genre is not matched then it gets 0 points.
-      - Extra 0.8 style point for rhythmic and energy alignment:
-      `0.8 * (1.0 - 0.5 * abs(target_dance - song.danceability) - 0.5 * abs(target_energy - song.energy))`.
+      - Genre match gives a song 1.1 pts: `1.1 if song.genre == user.favorite_genre else 0.0`.
+      - Rhythmic and energy alignment gives max 0.6 pt:
+      `0.6 * (1.0 - 0.5 * abs(target_dance - song.danceability) - 0.5 * abs(target_energy - song.energy))`.
+      - Acoustic texture alignment gives max 0.3 pt:
+      `0.3 * (1.0 - abs(target_acoustic - song.acousticness))` (where `target_acoustic = 0.85 if likes_acoustic else 0.15`).
 
     3. Groove (2.0 pts)
       - Danceability gated by valence lock:
@@ -74,7 +76,7 @@ flowchart TD
     
     subgraph Scoring ["5-Component Scoring Engine"]
         B --> C1["Emotion (3.0 pts): mood & valence"]
-        B --> C2["Style (2.0 pts): genre, dance & energy"]
+        B --> C2["Style (2.0 pts): genre, dance, energy & acoustic"]
         B --> C3["Groove (2.0 pts): danceability gated by valence"]
         B --> C4["Intensity (2.0 pts): energy & tempo"]
         B --> C5["Discovery & Era (1.0 pt): popularity & release_year"]

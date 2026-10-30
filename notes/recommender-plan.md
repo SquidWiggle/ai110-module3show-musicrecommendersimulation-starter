@@ -12,9 +12,9 @@ Total Points Budget: **10.0 pts**
 - **`valence` (1.2 pts)**: Proximity: `1.2 * (1.0 - abs(target_val - song.valence))`.
 
 ### 2. Style (2.0 pts) - Multi-Feature Composite
-- **Genre Tag (1.2 pts)**: `1.2 if song.genre == user.favorite_genre else 0.0`.
-- **Style Profile (0.8 pt)**: Proximity across rhythm and energy:
-  `0.8 * (1.0 - 0.5 * abs(target_dance - song.danceability) - 0.5 * abs(target_energy - song.energy))`.
+- **Genre Tag (1.1 pts)**: `1.1 if song.genre == user.favorite_genre else 0.0`.
+- **Rhythm & Energy Profile (0.6 pt)**: `0.6 * (1.0 - 0.5 * abs(target_dance - song.danceability) - 0.5 * abs(target_energy - song.energy))`.
+- **Acoustic Texture (0.3 pt)**: `0.3 * (1.0 - abs(target_acoustic - song.acousticness))` (where `target_acoustic = 0.85 if likes_acoustic else 0.15`).
 
 ### 3. Groove (2.0 pts) - Danceability Gated by Valence
 - **Base Groove + Valence Lock**:
