@@ -9,7 +9,7 @@ You will implement the functions in recommender.py:
 - recommend_songs
 """
 
-from recommender import load_songs, recommend_songs
+from recommender import load_songs, recommend_songs, format_recommendations
 
 
 def main() -> None:
@@ -25,14 +25,10 @@ def main() -> None:
 
     recommendations = recommend_songs(user_prefs, songs, k=5)
 
-    print("\nTop recommendations:\n")
-    for rec in recommendations:
-        # You decide the structure of each returned item.
-        # A common pattern is: (song, score, explanation)
-        song, score, explanation = rec
-        print(f"{song['title']} - Score: {score:.2f}")
-        print(f"Because: {explanation}")
-        print()
+    print("\n" + "=" * 80)
+    print("  MUSIC RECOMMENDER — TOP RECOMMENDATIONS")
+    print(format_recommendations(recommendations))
+    print()
 
 
 if __name__ == "__main__":

@@ -5,6 +5,8 @@ from src.recommender import (
     load_songs,
     score_song,
     recommend_songs,
+    format_recommendation_card,
+    format_recommendations,
 )
 
 def make_small_recommender() -> Recommender:
@@ -305,5 +307,30 @@ def test_recommend_songs_handles_boundary_cases():
 
     # Empty catalog returns empty list
     assert recommend_songs(user_prefs, [], k=3) == []
+
+
+def test_format_recommendation_card_contains_expected_fields():
+    """Documents formatting layout: rank, title, artist, score, and sorted reasons."""
+    song = {
+        "title": "Cosmic Drift",
+        "artist": "Starlight",
+        "genre": "ambient",
+        "mood": "calm",
+        "release_year": 2023,
+    }
+    reasons = "mood match (+1.80), tempo match (+0.95)"
+    card = format_recommendation_card(rank=1, song=song, score=8.75, reasons=reasons)
+
+    assert "#1  Cosmic Drift — Starlight" in card
+    assert "Score: 8.75 / 10.00" in card
+    assert "Ambient • Calm • 2023" in card
+    assert "+1.80  mood match" in card
+    assert "+0.95  tempo match" in card
+
+
+def test_format_recommendations_handles_empty_list():
+    """Documents formatting with no recommendations."""
+    assert format_recommendations([]) == ""
+
 
 

@@ -1,5 +1,6 @@
 import csv
-from typing import List, Dict, Tuple, Optional
+import re
+from typing import List, Dict, Tuple, Optional, Union
 from dataclasses import dataclass
 
 @dataclass
@@ -175,3 +176,105 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
     ]
     scored_songs.sort(key=lambda item: item[1], reverse=True)
     return scored_songs[:k]
+
+
+def parse_reason(reason_str: str) -> Tuple[float, str, str]:
+    """
+    Parses a reason string like 'mood match (+1.80)' into (1.80, '+1.80', 'mood match').
+    """
+    match = re.search(r"\(\+?(-?\d+(?:\.\d+)?)\)", reason_str)
+    if match:
+        val = float(match.group(1))
+        pts_str = f"+{val:.2f}" if val >= 0 else f"{val:.2f}"
+        label = reason_str[: match.start()].strip()
+        return val, pts_str, label
+    return 0.0, "", reason_str.strip()
+
+
+def format_recommendation_card(
+    rank: int,
+    song: Dict,
+    score: float,
+    reasons: Union[List[str], str],
+    width: int = 80,
+) -> str:
+    """
+    Formats a single song recommendation into a balanced 2-column card.
+    """
+    # 1. Normalize reasons
+    if isinstance(reasons, str):
+        raw_reasons = [r.strip() for r in reasons.split(",") if r.strip()]
+    else:
+        raw_reasons = list(reasons)
+
+    parsed_reasons = [parse_reason(r) for r in raw_reasons]
+    # Sort descending by impact
+    parsed_reasons.sort(key=lambda x: x[0], reverse=True)
+
+    # 2. Header
+    title = song.get("title", "Untitled")
+    artist = song.get("artist", "Unknown Artist")
+    header_left = f"#{rank}  {title} — {artist}"
+    header_right = f"Score: {score:.2f} / 10.00"
+
+    if len(header_left) + len(header_right) + 2 > width:
+        max_title_len = width - len(header_right) - len(artist) - 10
+        if max_title_len > 10:
+            title = title[: max_title_len - 3] + "..."
+            header_left = f"#{rank}  {title} — {artist}"
+
+    spacing = max(2, width - len(header_left) - len(header_right))
+    header_line = f"{header_left}{' ' * spacing}{header_right}"
+
+    # 3. Subtitle / metadata
+    meta = []
+    if song.get("genre"):
+        meta.append(str(song["genre"]).title())
+    if song.get("mood"):
+        meta.append(str(song["mood"]).title())
+    if song.get("release_year"):
+        meta.append(str(song["release_year"]))
+    meta_line = f"    {' • '.join(meta)}" if meta else ""
+
+    # 4. Reasons in balanced 2-column layout
+    reasons_lines = ["    Reasons:"]
+    if not parsed_reasons:
+        reasons_lines.append("      • No specific matching criteria recorded.")
+    else:
+        col_width = (width - 10) // 2
+        for i in range(0, len(parsed_reasons), 2):
+            val1, pts1, label1 = parsed_reasons[i]
+            col1 = f"• {pts1}  {label1}" if pts1 else f"• {label1}"
+
+            if i + 1 < len(parsed_reasons):
+                val2, pts2, label2 = parsed_reasons[i + 1]
+                col2 = f"• {pts2}  {label2}" if pts2 else f"• {label2}"
+                line = f"      {col1:<{col_width}}  {col2}"
+            else:
+                line = f"      {col1}"
+            reasons_lines.append(line)
+
+    divider = "=" * width
+    end_divider = "-" * width
+
+    parts = [divider, header_line] if rank == 1 else [header_line]
+    if meta_line:
+        parts.append(meta_line)
+    parts.extend(reasons_lines)
+    parts.append(end_divider)
+    return "\n".join(parts)
+
+
+def format_recommendations(
+    recommendations: List[Tuple[Dict, float, Union[List[str], str]]],
+    width: int = 80,
+) -> str:
+    """
+    Formats the list of recommendations into a clean terminal layout.
+    """
+    cards = [
+        format_recommendation_card(rank, song, score, explanation, width=width)
+        for rank, (song, score, explanation) in enumerate(recommendations, start=1)
+    ]
+    return "\n".join(cards)
+
