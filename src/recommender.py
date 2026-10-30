@@ -109,8 +109,8 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     Scores a single song against user preferences.
     Required by recommend_songs() and src/main.py
     """
-    fav_genre = user_prefs.get("favorite_genre", user_prefs.get("genre", ""))
-    fav_mood = user_prefs.get("favorite_mood", user_prefs.get("mood", ""))
+    fav_genre = str(user_prefs.get("favorite_genre", user_prefs.get("genre", ""))).strip().lower()
+    fav_mood = str(user_prefs.get("favorite_mood", user_prefs.get("mood", ""))).strip().lower()
     target_energy = float(user_prefs.get("target_energy", user_prefs.get("energy", 0.5)))
     target_valence = float(user_prefs.get("likes_valence", user_prefs.get("valence", 0.5)))
     target_dance = float(user_prefs.get("target_danceability", user_prefs.get("danceability", 0.5)))
@@ -121,7 +121,8 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     reasons: List[str] = []
 
     # 1. Emotion (max 3.0 pts)
-    mood_pts = 1.8 if song.get("mood") == fav_mood else 0.0
+    song_mood = str(song.get("mood", "")).strip().lower()
+    mood_pts = 1.8 if (fav_mood and song_mood == fav_mood) else 0.0
     if mood_pts > 0:
         reasons.append(f"mood match (+{mood_pts:.2f})")
 
@@ -131,7 +132,8 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
         reasons.append(f"valence match (+{valence_pts:.2f})")
 
     # 2. Style (max 2.0 pts)
-    genre_pts = 1.1 if song.get("genre") == fav_genre else 0.0
+    song_genre = str(song.get("genre", "")).strip().lower()
+    genre_pts = 1.1 if (fav_genre and song_genre == fav_genre) else 0.0
     if genre_pts > 0:
         reasons.append(f"genre match (+{genre_pts:.2f})")
 

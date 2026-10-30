@@ -333,4 +333,27 @@ def test_format_recommendations_handles_empty_list():
     assert format_recommendations([]) == ""
 
 
+def test_score_song_case_insensitive_matching():
+    """Validates that uppercase or whitespace in genre/mood matches catalog entries."""
+    user_prefs = {"genre": " POP ", "mood": " Happy "}
+    song = {
+        "id": 1,
+        "title": "Match",
+        "artist": "Artist",
+        "genre": "pop",
+        "mood": "happy",
+        "energy": 0.5,
+        "tempo_bpm": 120.0,
+        "valence": 0.5,
+        "danceability": 0.5,
+        "acousticness": 0.5,
+        "popularity": 50,
+        "duration_ms": 180000,
+        "release_year": 2024,
+    }
+    _, reasons = score_song(user_prefs, song)
+    assert any("mood match" in r for r in reasons)
+    assert any("genre match" in r for r in reasons)
+
+
 
