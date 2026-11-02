@@ -14,7 +14,7 @@ Describe what your recommender is designed to do and who it is for.
 Prompts:  
 
 - What kind of recommendations does it generate
-    - Content based recommendation based on similarities in content features.
+    - Content based recommendation based on similarities in content's features.
 - What assumptions does it make about the user
     - The user enjoys content of similar features, for example, songs of the same energy or genre, rather than music of various genre and styles.
 - Is this for real users or classroom exploration
@@ -68,10 +68,14 @@ Where the system struggles or behaves unfairly.
 
 Prompts:  
 
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
+- Features it does not consider
+    - duration_ms and artist is not considered. I tried to incorporate all other features but genre is under weighted than others.
+- Genres or moods that are underrepresented
+    - blues, punk, edm, latin
+- Cases where the system overfits to one preference
+    - It overfits danceable, high-valence pop profiles
+- Ways the scoring might unintentionally favor some users
+    - It favors mainstream, upbeat, modern dance listeners over niche, acoustic, vintage, and melancholic tastes.
 
 ---
 
@@ -81,11 +85,20 @@ How you checked whether the recommender behaved as expected.
 
 Prompts:  
 
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
+- Which user profiles you tested
+    - Chill Lofi
+    - Deep Intense Rock
+    - Adversarial: The Genre Hijack
+    - Adversarial: The Casing Trap
+    - Adversarial: The Sad Banger
+    - Adversarial: The Dark Clubber
+    - Adversarial: Out-of-Bounds Exploit
+- What you looked for in the recommendations
+    - I looked for frquency of the songs showing up under each user profile, and what features contribted the most to their recommendations.
+- What surprised you
+    - Removing my top weighted feature did not make the formula better but made it worse
 - Any simple tests or comparisons you ran  
-
+    - I removed valence from the calculation, but surprisingly, the recommender became worse ad recommended more of the same song (7 repeats each on 2 songs)
 No need for numeric metrics unless you created some.
 
 ---
@@ -97,6 +110,7 @@ Ideas for how you would improve the model next.
 Prompts:  
 
 - Additional features or preferences  
+    - I'd like to add artist into the scorer, reduce popularity bias to allow the user to discover indie hits.
 - Better ways to explain recommendations  
 - Improving diversity among the top results  
 - Handling more complex user tastes  
