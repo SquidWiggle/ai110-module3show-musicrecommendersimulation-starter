@@ -129,8 +129,11 @@ Prompts:
 - Additional features or preferences  
     - I'd like to add artist into the scorer, reduce popularity bias to allow the user to discover indie hits, and add a few older years into the mix instead of only looking at recent years from the user profile.
 - Better ways to explain recommendations  
+    Use more visual displays and show more percentage bars.
 - Improving diversity among the top results  
+    - Generate more songs with more diverse genre.
 - Handling more complex user tastes  
+    - Incorporate lyrics and interprete nuances with LLM
 
 ---
 
@@ -141,5 +144,8 @@ A few sentences about your experience.
 Prompts:  
 
 - What you learned about recommender systems  
+    - There are a lot more layers than just simple scoring. On top of these calculations, there are big data interpretation, and deep learning layers.
 - Something unexpected or interesting you discovered  
+    Without tons of different features and computations, it is hard to give diverse and accurate recommendations. 
 - How this changed the way you think about music recommendation apps  
+    - It burns a lot of comupting powers just to generate recommendations.
